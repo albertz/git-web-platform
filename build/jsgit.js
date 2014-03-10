@@ -3787,7 +3787,7 @@ module.exports = function (platform) {
   var writable = require('node_modules/git-net/writable.js');
   var sharedFetch = require('node_modules/git-net/fetch.js');
   var sharedDiscover = require('node_modules/git-net/discover.js');
-  var pushToPull = require('node_modules/git-net/node_modules/push-to-pull/transform.js');
+  var pushToPull = require('node_modules/push-to-pull/transform.js');
   var pktLine = require('node_modules/git-net/pkt-line.js')(platform);
   var framer = pushToPull(pktLine.framer);
   var deframer = pushToPull(pktLine.deframer);
@@ -4016,48 +4016,6 @@ function discover(socket, callback) {
 }
 };
 
-defs["node_modules/git-net/node_modules/push-to-pull/transform.js"] = function (module, exports) {
-// input push-filter: (emit) -> emit
-// output is simple-stream pull-filter: (stream) -> stream
-module.exports = pushToPull;
-function pushToPull(parser) {
-  return function (stream) {
-  
-    var write = parser(onData);
-    var cb = null;
-    var queue = [];
-      
-    return { read: read, abort: stream.abort };
-    
-    function read(callback) {
-      if (queue.length) return callback(null, queue.shift());
-      if (cb) return callback(new Error("Only one read at a time."));
-      cb = callback;
-      stream.read(onRead);
-      
-    }
-
-    function onRead(err, item) {
-      var callback = cb;
-      cb = null;
-      if (err) return callback(err);
-      try {
-        write(item);
-      }
-      catch (err) {
-        return callback(err);
-      }
-      return read(callback);
-    }
-
-    function onData(item) {
-      queue.push(item);
-    }
-
-  };
-}
-};
-
 defs["node_modules/git-net/pkt-line.js"] = function (module, exports) {
 module.exports = function (platform) {
   var bops = platform.bops;
@@ -4193,7 +4151,7 @@ module.exports = function (platform) {
   var writable = require('node_modules/git-net/writable.js');
   var sharedDiscover = require('node_modules/git-net/discover.js');
   var sharedFetch = require('node_modules/git-net/fetch.js');
-  var pushToPull = require('node_modules/git-net/node_modules/push-to-pull/transform.js');
+  var pushToPull = require('node_modules/push-to-pull/transform.js');
   var pktLine = require('node_modules/git-net/pkt-line.js')(platform);
   var framer = pushToPull(pktLine.framer);
   var deframer = pushToPull(pktLine.deframer);
@@ -4447,7 +4405,7 @@ module.exports = function (platform) {
   var writable = require('node_modules/git-net/writable.js');
   var sharedFetch = require('node_modules/git-net/fetch.js');
   var sharedDiscover = require('node_modules/git-net/discover.js');
-  var pushToPull = require('node_modules/git-net/node_modules/push-to-pull/transform.js');
+  var pushToPull = require('node_modules/push-to-pull/transform.js');
   var trace = platform.trace;
   var pktLine = require('node_modules/git-net/pkt-line.js')(platform);
   var framer = pushToPull(pktLine.framer);
