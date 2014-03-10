@@ -25,9 +25,9 @@ platform.http = require('node_modules/git-http/pure-http.js')(platform);
 window.jsgit = {
   repo: require('node_modules/js-git/js-git.js')(platform),
   remote: require('node_modules/git-net/remote.js')(platform),
-  db: require('node_modules/git-localdb/localdb.js')(platform),
+  //db: require('git-localdb')(platform),
   // Uncomment to switch to an in-memory database for quick testing.
-  // db: require('git-memdb'),
+  db: require('node_modules/git-memdb/memdb.js'),
   version: require('node_modules/js-git/package.json').version
 };
 };
@@ -4489,7 +4489,7 @@ module.exports = function (platform) {
 };
 };
 
-defs["node_modules/git-localdb/localdb.js"] = function (module, exports) {
+defs["node_modules/git-memdb/memdb.js"] = function (module, exports) {
 function makeAsync(fn, callback) {
   if (!callback) return makeAsync.bind(this, fn);
   setImmediate(function () {
@@ -4501,22 +4501,11 @@ function makeAsync(fn, callback) {
   });
 }
 
-var deflate, inflate;
-module.exports = function (platform) {
-  deflate = platform.deflate || fake;
-  inflate = platform.inflate || fake;
-  return localDb;
-};
+module.exports = function () {
 
-function fake(input, callback) {
-  setImmediate(function () {
-    callback(null, input);
-  });
-}
-
-function localDb(prefix) {
-
-  var refs;
+  // Store everything in ram!
+  var objects;
+  var others;
   var isHash = /^[a-z0-9]{40}$/;
 
   return {
@@ -4526,71 +4515,54 @@ function localDb(prefix) {
     del: del,
     keys: keys,
     init: init,
-    clear: clear
+    clear: init,
   };
 
   function get(key, callback) {
-    if (!callback) return get.bind(this, key);
-    if (isHash.test(key)) {
-      var raw = localStorage.getItem(key);
-      if (!raw) return;
-      var length = raw.length;
-      var buffer = new Uint8Array(length);
-      for (var i = 0; i < length; ++i) {
-        buffer[i] = raw.charCodeAt(i);
+    return makeAsync(function () {
+      // hash (40 hex chars) keys get and set binary, others use strings.
+      // This is an in-memory db so it doesn't care.
+      if (isHash.test(key)) {
+        return objects[key];
       }
-      return inflate(buffer, callback);
-    }
-    setImmediate(function () {
-      callback(null, refs[key]);
-    });
+      return others[key];
+    }, callback);
   }
 
   function set(key, value, callback) {
-    if (!callback) return set.bind(this, key, value);
-    if (isHash.test(key)) {
-      return deflate(value, function (err, deflated) {
-        var raw = "";
-        for (var i = 0, l = deflated.length; i < l; ++i) {
-          raw += String.fromCharCode(deflated[i]);
-        }
-        try {
-          localStorage.setItem(key, raw);
-        }
-        catch (err) {
-          return callback(err);
-        }
-        callback();
-      });
-    }
-    refs[key] = value.toString();
-    localStorage.setItem(prefix, JSON.stringify(refs));
-    setImmediate(callback);
+    return makeAsync(function () {
+      if (isHash.test(key)) {
+        objects[key] = value;
+      }
+      else {
+        others[key] = value.toString();
+      }
+    }, callback);
   }
 
   function has(key, callback) {
     return makeAsync(function () {
       if (isHash.test(key)) {
-        return !!localStorage.getItem(key);
+        return key in objects;
       }
-      return key in refs;
+      return key in others;
     }, callback);
   }
 
   function del(key, callback) {
     return makeAsync(function () {
       if (isHash.test(key)) {
-        localStorage.removeItem(key);
+        delete objects[key];
       }
       else {
-        delete refs[key];
+        delete others[key];
       }
     }, callback);
   }
 
   function keys(prefix, callback) {
     return makeAsync(function () {
-      var list = Object.keys(refs);
+      var list = Object.keys(others);
       if (!prefix) return list;
       var length = prefix.length;
       return list.filter(function (key) {
@@ -4603,25 +4575,12 @@ function localDb(prefix) {
 
   function init(callback) {
     return makeAsync(function () {
-      var json = localStorage.getItem(prefix);
-      if (!json) {
-        refs = {};
-        return;
-      }
-      refs = JSON.parse(json);
+      objects = {};
+      others = {};
     }, callback);
   }
 
-  function clear(callback) {
-    return makeAsync(function () {
-      refs = {};
-      localStorage.removeItem(prefix);
-      // We don't know all the hashes that were used by only this database
-      // so just kill everything so save space.
-      localStorage.clear();
-    }, callback);
-  }
-}
+};
 };
 
 var realRequire = typeof require === 'undefined' ? null : require;

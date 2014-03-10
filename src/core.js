@@ -20,9 +20,9 @@ platform.http = require('git-http')(platform);
 window.jsgit = {
   repo: require('js-git')(platform),
   remote: require('git-net')(platform),
-  db: require('git-localdb')(platform),
+  //db: require('git-localdb')(platform),
   // Uncomment to switch to an in-memory database for quick testing.
-  // db: require('git-memdb'),
+  db: require('git-memdb'),
   version: require('js-git/package.json').version
 };
 
