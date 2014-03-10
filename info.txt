@@ -1,0 +1,27 @@
+run:
+  node make.js
+
+  it might fail at the end with this msg:
+
+	./find-deps.js src/core.js > build/jsgit.js
+
+	D:\external-projects\jsGit\git-web-platform\make.js:14
+	  if (err) throw err;
+	                 ^
+	Error: spawn ENOENT
+	    at errnoException (child_process.js:988:11)
+	    at Process.ChildProcess._handle.onexit (child_process.js:779:34)
+
+  but that doesn't matter (I think). I think it's just the uglifyjs.
+
+
+When you run that, you will most likely get some missing-module error.
+Install all the missing mods via:
+
+  in this dir:
+    npm install <missing-mod>
+
+  This will install them into the subdirectory node_modules.
+
+Except for js-git. Go into node_modules, and git clone the repo (
+https://github.com/creationix/js-git). Checkout version 0.5.4.
